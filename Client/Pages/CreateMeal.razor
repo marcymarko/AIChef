@@ -24,16 +24,46 @@
                         <label class="form-label">Ingredient</label>
                         <InputText placeholder="Add Ingredient" maxlength="30" @bind-Value="meal.ingredient" class="form-control mb-2"></InputText>
                     </div>
+                    <div class="col-12">
+                        <button class="btn btn-outline-success" @onclick="AddIngredient">Add</button>
+                        <button class="btn btn-outline-danger" @onclick="RemoveAll">Clear</button>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <div class="table-responsive">
+                            <div class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Ingredient</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach(var item in ingredients)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @item.Description
+                                            </td>
+                                            <td class="text-end pe-3">
+                                                <button class="btn btn-outline-danger" @onclick="() => RemoveIngredient(item.Id)"><i class="bi bi-trash-fill"></i></button>
+                                            </td>
+                                        </tr>                               
+                                    }
+                                </tbody>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-success rounded">Generate</button>
+                    </div>
                 </div>
             </EditForm>
         </div>
     </div>
-
 </div>
 
 @code {
     private EditContext? editcontext;
-
+    private List<Ingredient> ingredients = new List<Ingredient>();
     private Meal meal = new();
 
     protected override void OnInitialized()
@@ -45,5 +75,30 @@
     {
         public string? mealtime { get; set; }
         public string? ingredient { get; set; }
+    }
+
+    private void AddIngredient()
+    {
+        if (!string.IsNullOrEmpty(meal.ingredient))
+        {
+            ingredients.Add(new Ingredient()
+            {
+                    Id = Guid.NewGuid(),
+                    Description = meal.ingredient
+            });
+        }
+
+        // clear the textbox
+        meal.ingredient = string.Empty;
+    }
+
+    private void RemoveAll()
+    {
+        ingredients.Clear();
+    }
+
+    private void RemoveIngredient(Guid id)
+    {
+        ingredients.Remove(ingredients.First(x => x.Id == id));
     }
 }
