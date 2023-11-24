@@ -32,7 +32,7 @@ namespace AIChef.Server.Controllers
 
             var ideas =  await _openAiservice.CreateRecipeIdeas(mealtime, ingredients);
 
-            //return ideas;
+            // return ideas;
             return SampleData.RecipeIdeas;
         }
 
