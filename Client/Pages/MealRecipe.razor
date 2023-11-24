@@ -1,28 +1,53 @@
 ﻿@page "/mealRecipe/{Index:int}"
 @using AIChef.Shared
 @using System.Text.Json
+@using System.Web
 @inject HttpClient http
 @inject NavigationManager navigraionManager
+@inject IJSRuntime Js
 
-<div class="container mt-5 h-100">
-    <div class="d-flex flex-column flex-lg-row justify-content-start">
-        <div class="text-center text-lg-start">
-            <img class="rounded-3" />
+@if(loaded == true)
+{
+    <div class="container mt-5 h-100">
+        <div class="d-flex flex-column flex-lg-row justify-content-start">
+            <div class="text-center text-lg-start">
+                <img src="@recipeImageUrl" class="rounded-3 recipeImage" />
+            </div>
+            <div class="flex-grow-1 px-3">
+                <h1 class="fw-bold">@recipe.title</h1>
+                <p>@recipe.summary</p>
+                <div class="text-end">
+                    <button class="btn btn-danger d-print-none" @onclick="Print">Print</button>
+                </div>
+            </div>
         </div>
-        <div class="flex-grow-1 px-3">
-            <h1 class="fw-bold">@title</h1>
-            <p>Description Goes</p>
+        <div class="row row-cols-1 row-cols-md-2">
+            <div class="col mt-3">
+                <h2>Ingredients</h2>
+                <ul>
+                    @foreach(var item in recipe.ingredients)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+            </div>
+            <div class="col">
+                <h2>Instructions</h2>
+                <ul>
+                    @foreach(var item in recipe.instructions)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+            </div>
         </div>
     </div>
-    <div class="row row-cols-1 row-cols-md-2">
-        <div class="col mt-3">
-            <h2>Ingredients</h2>
-        </div>
-        <div class="col">
-            <h2>Instructions</h2>
-        </div>
-    </div>
-</div>
+}
+else
+{
+    <ChefSpinner></ChefSpinner>
+}
+
 
 @code {
     [CascadingParameter]
@@ -30,12 +55,58 @@
 
     [Parameter]
     public int Index { get; set; }
+    bool loaded = false;
 
     private string title;
+    private string recipeImageUrl = string.Empty;
+    private Recipe recipe;
+
 
     protected override void OnInitialized()
     {
-        title = rState.Ideas.FirstOrDefault(i => i.index == Index).title;
+        GetRecipe();
     }
 
+    private async void GetRecipe()
+    {
+        string baseuri = "Recipe/GetRecipe";
+
+        try
+        {
+            string title = rState.Ideas.FirstOrDefault(i => i.index == Index).title;
+
+            RecipeParms recipeParms = new RecipeParms()
+                {
+                    Mealtime = rState.MealTime,
+                    Ingredients = rState.Ingredients,
+                    SelectedIdea = title
+                };
+
+            // get the recipe image
+            HttpResponseMessage responseImage = await http.GetAsync($"Recipe/GetRecipeImage?title={HttpUtility.UrlEncode(title)}");
+            var recipeImage = await responseImage.Content.ReadFromJsonAsync<RecipeImage>();
+            recipeImageUrl = recipeImage!.data[0].url;
+
+            //get the recipe
+            HttpResponseMessage responseRecipe = await http.PostAsJsonAsync(baseuri, recipeParms);
+
+            responseRecipe.EnsureSuccessStatusCode();
+
+            recipe = await responseRecipe.Content.ReadFromJsonAsync<Recipe>();
+
+            loaded = true;
+            // notify blazor that state has changed
+            StateHasChanged();           
+        }
+        catch (Exception)
+        {
+            Console.WriteLine("Error: could not generate recipe");
+
+        }
+    }
+
+    private async Task Print()
+    {
+        await Js.InvokeVoidAsync("printInvoke");
+    }
 }

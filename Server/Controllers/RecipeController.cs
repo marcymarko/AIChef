@@ -30,10 +30,41 @@ namespace AIChef.Server.Controllers
                 mealtime = "Breakfast";
             }
 
-            var ideas =  await _openAiservice.CreateRecipeIdeas(mealtime, ingredients);
+            var ideas = await _openAiservice.CreateRecipeIdeas(mealtime, ingredients);
 
-            // return ideas;
-            return SampleData.RecipeIdeas;
+            return ideas;
+            //return SampleData.RecipeIdeas;
+        }
+
+        [HttpPost, Route("GetRecipe")]
+        public async Task<ActionResult<Recipe?>> GetRecipe(RecipeParms recipeParms)
+        {
+            List<string> ingredients = recipeParms.Ingredients
+                                                  .Where(x => !string.IsNullOrEmpty(x.Description))
+                                                  .Select(x => x.Description)
+                                                  .ToList();
+
+            string title = recipeParms.SelectedIdea;
+
+            if (string.IsNullOrEmpty(title))
+            {
+                return BadRequest();
+            }
+
+            var recipe = await _openAiservice.CreateRecipe(title, ingredients);
+            return recipe;
+
+            //return SampleData.Recipe;
+        }
+
+        [HttpGet, Route("GetRecipeImage")]
+        public async Task<RecipeImage> GetRecipeImage(string title)
+        {
+            var recipeImage = await _openAiservice.CreateRecipeImage(title);
+
+            return recipeImage ?? SampleData.RecipeImage;
+
+            // return SampleData.RecipeImage;
         }
 
     }
